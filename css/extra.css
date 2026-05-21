@@ -1,0 +1,24 @@
+/* Extra: Sidebar collapsed styles */
+.sidebar.collapsed {
+  width: 60px;
+}
+.sidebar.collapsed .logo-text,
+.sidebar.collapsed .sidebar-menu li a span,
+.sidebar.collapsed .user-info,
+.sidebar.collapsed .logout-btn span,
+.sidebar.collapsed .menu-label {
+  display: none;
+}
+.sidebar.collapsed .sidebar-menu li a {
+  padding: 14px;
+  justify-content: center;
+}
+.sidebar.collapsed .sidebar-menu li a i { width: auto; }
+.sidebar.collapsed .user-avatar { margin: 0 auto; }
+.sidebar.collapsed .sidebar-user { justify-content: center; }
+
+.main-wrapper.sidebar-collapsed {
+  margin-left: 60px;
+}
+
+/* Ensure correct APP_URL handling for modules subdir */
