@@ -1,30 +1,25 @@
 <?php
 require_once 'includes/auth.php';
+require_once 'includes/helpers.php';
 requireLogin();
 $user     = getCurrentUser();
 $currency = getSetting('currency_symbol', 'Rs.');
 $db       = getDB();
 
-// --- Stats ---
-function stat($db, $sql, $params = []) {
-    $s = $db->prepare($sql);
-    $s->execute($params);
-    return $s->fetchColumn();
-}
-
+// --- Stats (using helper function) ---
 $today         = date('Y-m-d');
 $weekStart     = date('Y-m-d', strtotime('monday this week'));
 $monthStart    = date('Y-m-01');
 $yearStart     = date('Y-01-01');
 
-$todaySales    = stat($db, "SELECT COALESCE(SUM(grand_total),0) FROM bills WHERE DATE(created_at)=? AND status='completed'", [$today]);
-$weeklySales   = stat($db, "SELECT COALESCE(SUM(grand_total),0) FROM bills WHERE created_at>=? AND status='completed'", [$weekStart]);
-$monthlySales  = stat($db, "SELECT COALESCE(SUM(grand_total),0) FROM bills WHERE created_at>=? AND status='completed'", [$monthStart]);
-$yearlySales   = stat($db, "SELECT COALESCE(SUM(grand_total),0) FROM bills WHERE created_at>=? AND status='completed'", [$yearStart]);
-$totalBills    = stat($db, "SELECT COUNT(*) FROM bills WHERE status='completed'");
-$todayBills    = stat($db, "SELECT COUNT(*) FROM bills WHERE DATE(created_at)=? AND status='completed'", [$today]);
-$avgBill       = stat($db, "SELECT COALESCE(AVG(grand_total),0) FROM bills WHERE status='completed'");
-$totalDiscount = stat($db, "SELECT COALESCE(SUM(total_discount),0) FROM bills WHERE status='completed'");
+$todaySales    = queryStat($db, "SELECT COALESCE(SUM(grand_total),0) FROM bills WHERE DATE(created_at)=? AND status='completed'", [$today]);
+$weeklySales   = queryStat($db, "SELECT COALESCE(SUM(grand_total),0) FROM bills WHERE created_at>=? AND status='completed'", [$weekStart]);
+$monthlySales  = queryStat($db, "SELECT COALESCE(SUM(grand_total),0) FROM bills WHERE created_at>=? AND status='completed'", [$monthStart]);
+$yearlySales   = queryStat($db, "SELECT COALESCE(SUM(grand_total),0) FROM bills WHERE created_at>=? AND status='completed'", [$yearStart]);
+$totalBills    = queryStat($db, "SELECT COUNT(*) FROM bills WHERE status='completed'");
+$todayBills    = queryStat($db, "SELECT COUNT(*) FROM bills WHERE DATE(created_at)=? AND status='completed'", [$today]);
+$avgBill       = queryStat($db, "SELECT COALESCE(AVG(grand_total),0) FROM bills WHERE status='completed'");
+$totalDiscount = queryStat($db, "SELECT COALESCE(SUM(total_discount),0) FROM bills WHERE status='completed'");
 
 // Last 7 days chart data
 $chartStmt = $db->query("SELECT DATE(created_at) as d, COALESCE(SUM(grand_total),0) as total
