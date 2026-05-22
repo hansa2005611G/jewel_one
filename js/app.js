@@ -107,6 +107,15 @@ if (document.getElementById('billingForm')) {
   const TAX_ENABLED = document.getElementById('taxEnabled')?.value === '1';
   const TAX_RATE = parseFloat(document.getElementById('taxRate')?.value || 0);
 
+  function escapeHTML(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#039;');
+  }
+
   function addItemRow(data = {}) {
     itemCount++;
     const id = `item_${itemCount}`;
@@ -115,10 +124,12 @@ if (document.getElementById('billingForm')) {
     row.id = id;
     row.dataset.index = itemCount;
     row.innerHTML = `
-      <div class="form-group">
+      <div class="form-group" style="position:relative">
         <label class="form-label">Product Name</label>
         <input type="text" class="form-control item-name" name="items[${itemCount}][name]"
           placeholder="e.g. Gold Ring 22K" value="${data.name || ''}" required autocomplete="off">
+        <input type="hidden" class="item-product-id" name="items[${itemCount}][product_id]" value="${data.product_id || ''}">
+        <div class="autocomplete-suggestions" style="display:none"></div>
       </div>
       <div class="form-group">
         <label class="form-label">Qty</label>
@@ -169,10 +180,79 @@ if (document.getElementById('billingForm')) {
     row.querySelector('.item-disc-type').addEventListener('change', () => calcRowTotal(id));
     row.querySelector('.item-disc-val').addEventListener('input', () => calcRowTotal(id));
 
+    // Autocomplete logic for Product Name
+    const nameInput = row.querySelector('.item-name');
+    const suggContainer = row.querySelector('.autocomplete-suggestions');
+    const productIdInput = row.querySelector('.item-product-id');
+    const priceInput = row.querySelector('.item-price');
+
+    let debounceTimeout = null;
+
+    nameInput.addEventListener('input', function() {
+      clearTimeout(debounceTimeout);
+      const query = this.value.trim();
+      if (query.length < 1) {
+        suggContainer.style.display = 'none';
+        suggContainer.innerHTML = '';
+        productIdInput.value = ''; // Reset product ID if they cleared the field
+        return;
+      }
+
+      debounceTimeout = setTimeout(async () => {
+        try {
+          const res = await fetch(`ajax/search_products.php?q=${encodeURIComponent(query)}`);
+          const products = await res.json();
+          if (products && products.length > 0) {
+            suggContainer.innerHTML = '';
+            products.forEach(p => {
+              const div = document.createElement('div');
+              div.className = 'autocomplete-suggestion';
+              div.innerHTML = `
+                <div class="suggest-info">
+                  <div class="suggest-title-row">
+                    <span class="suggest-title">${escapeHTML(p.name)}</span>
+                    ${p.sku ? `<span class="suggest-sku">[${escapeHTML(p.sku)}]</span>` : ''}
+                  </div>
+                  <span class="suggest-cat">${escapeHTML(p.category || 'No Category')}</span>
+                </div>
+                <div class="suggest-stock-price">
+                  <span class="suggest-price">${CURRENCY} ${parseFloat(p.unit_price).toFixed(2)}</span>
+                  <span class="suggest-stock">${parseFloat(p.current_stock)} in stock</span>
+                </div>
+              `;
+              div.addEventListener('click', () => {
+                nameInput.value = p.name;
+                productIdInput.value = p.id;
+                priceInput.value = p.unit_price;
+                suggContainer.style.display = 'none';
+                suggContainer.innerHTML = '';
+                calcRowTotal(id);
+              });
+              suggContainer.appendChild(div);
+            });
+            suggContainer.style.display = 'block';
+          } else {
+            suggContainer.style.display = 'none';
+            suggContainer.innerHTML = '';
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }, 200);
+    });
+
+    // Close when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!nameInput.contains(e.target) && !suggContainer.contains(e.target)) {
+        suggContainer.style.display = 'none';
+      }
+    });
+
     calcRowTotal(id);
     updateBillTotals();
     return id;
   }
+
 
   function calcRowTotal(id) {
     const row   = document.getElementById(id);

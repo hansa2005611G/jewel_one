@@ -61,10 +61,16 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
     <li class="<?= $currentPage === 'reports' ? 'active' : '' ?>">
       <a href="<?= APP_URL ?>/reports.php"><i class="fas fa-chart-bar"></i><span>Reports & Analytics</span></a>
     </li>
+    <li class="<?= $currentPage === 'ai_predictions' ? 'active' : '' ?>">
+      <a href="<?= APP_URL ?>/ai_predictions.php"><i class="fas fa-magic"></i><span>AI Predictions</span></a>
+    </li>
 
     <li class="menu-label">ADMIN</li>
     <li class="<?= $currentPage === 'users' ? 'active' : '' ?>">
       <a href="<?= APP_URL ?>/modules/users.php"><i class="fas fa-users"></i><span>Manage Users</span></a>
+    </li>
+    <li class="<?= $currentPage === 'inventory' ? 'active' : '' ?>">
+      <a href="<?= APP_URL ?>/modules/inventory.php"><i class="fas fa-boxes"></i><span>Inventory</span></a>
     </li>
     <li class="<?= $currentPage === 'settings' ? 'active' : '' ?>">
       <a href="<?= APP_URL ?>/modules/settings.php"><i class="fas fa-cog"></i><span>Settings</span></a>

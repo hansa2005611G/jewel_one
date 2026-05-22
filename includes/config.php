@@ -27,11 +27,44 @@ function getDB() {
                 PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4"
             ];
             $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+            
+            // Run Auto-Migrations
+            runMigrations($pdo);
         } catch (PDOException $e) {
             die(json_encode(['error' => 'Database connection failed: ' . $e->getMessage()]));
         }
     }
     return $pdo;
+}
+
+// Auto-Migrations Helper
+function runMigrations($db) {
+    try {
+        // Create products table
+        $db->exec("CREATE TABLE IF NOT EXISTS products (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            sku VARCHAR(50) NULL UNIQUE,
+            name VARCHAR(300) NOT NULL UNIQUE,
+            category VARCHAR(150) NULL,
+            current_stock DECIMAL(10,3) NOT NULL DEFAULT 0.000,
+            min_stock_level DECIMAL(10,3) NOT NULL DEFAULT 5.000,
+            cost_price DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+            unit_price DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB");
+
+        // Check if product_id column exists in bill_items
+        $checkCol = $db->query("SHOW COLUMNS FROM bill_items LIKE 'product_id'")->fetch();
+        if (!$checkCol) {
+            // Add column product_id to bill_items
+            $db->exec("ALTER TABLE bill_items ADD COLUMN product_id INT NULL AFTER bill_id");
+            // Add foreign key constraint
+            $db->exec("ALTER TABLE bill_items ADD CONSTRAINT fk_bill_items_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL");
+        }
+    } catch (Exception $e) {
+        // Fail silently
+    }
 }
 
 // Get setting value

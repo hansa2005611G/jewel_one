@@ -46,14 +46,18 @@ try {
         $original = (float)($item['original'] ?? 0);
         $final    = (float)($item['final_total'] ?? 0);
         $hasDisc  = isset($item['has_discount']);
+        $productId = isset($item['product_id']) && (int)$item['product_id'] > 0 ? (int)$item['product_id'] : null;
 
         if (empty($name) || $qty <= 0 || $price < 0) continue;
         if (!$hasDisc) { $discType = 'none'; $discVal = 0; $discAmt = 0; }
 
-        $cleanItems[] = compact('name','qty','price','discType','discVal','discAmt','original','final');
+        $cleanItems[] = compact('name','qty','price','discType','discVal','discAmt','original','final','productId');
     }
 
     if (empty($cleanItems)) throw new Exception('No valid items provided.');
+
+    // Start transaction
+    $db->beginTransaction();
 
     // Generate unique bill number if collision
     $exists = $db->prepare("SELECT id FROM bills WHERE bill_number = ?");
@@ -77,15 +81,18 @@ try {
 
     $billId = $db->lastInsertId();
 
-    // Insert items
+    // Insert items and update product stock
     $iStmt = $db->prepare("INSERT INTO bill_items
-        (bill_id, product_name, quantity, unit_price, discount_type, discount_value,
+        (bill_id, product_id, product_name, quantity, unit_price, discount_type, discount_value,
          discount_amount, original_price, final_total)
-        VALUES (?,?,?,?,?,?,?,?,?)");
+        VALUES (?,?,?,?,?,?,?,?,?,?)");
+
+    $updateStockStmt = $db->prepare("UPDATE products SET current_stock = current_stock - ? WHERE id = ?");
 
     foreach ($cleanItems as $item) {
         $iStmt->execute([
             $billId,
+            $item['productId'],
             $item['name'],
             $item['qty'],
             $item['price'],
@@ -95,12 +102,21 @@ try {
             $item['original'],
             $item['final']
         ]);
+
+        if ($item['productId'] !== null && !$isDraft) {
+            $updateStockStmt->execute([$item['qty'], $item['productId']]);
+        }
     }
+
+    $db->commit();
 
     logAction($cashierId, 'CREATE_BILL', "Bill #{$billNumber} created, Total: {$grandTotal}");
 
     echo json_encode(['success' => true, 'bill_id' => $billId, 'bill_number' => $billNumber]);
 
 } catch (Exception $e) {
+    if (isset($db) && $db->inTransaction()) {
+        $db->rollBack();
+    }
     echo json_encode(['error' => $e->getMessage()]);
 }

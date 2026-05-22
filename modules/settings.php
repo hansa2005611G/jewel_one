@@ -6,7 +6,7 @@ $msg = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fields = ['shop_name','shop_address','shop_phone','shop_email','tax_enabled','tax_percentage',
-               'currency_symbol','receipt_footer','thermal_size','theme_mode','receipt_copies'];
+               'currency_symbol','receipt_footer','thermal_size','theme_mode','receipt_copies','gemini_api_key'];
     foreach ($fields as $f) {
         $val = trim($_POST[$f] ?? '');
         $db->prepare("INSERT INTO settings (setting_key,setting_value) VALUES (?,?) ON DUPLICATE KEY UPDATE setting_value=?")
@@ -150,6 +150,20 @@ include '../includes/header.php';
           <option value="dark"  <?= s($settings,'theme_mode','dark')==='dark' ?'selected':'' ?>>Dark Mode (Default)</option>
           <option value="light" <?= s($settings,'theme_mode')==='light'?'selected':'' ?>>Light Mode</option>
         </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI & Analytics Settings -->
+  <div class="card">
+    <div class="card-header"><span class="card-title"><i class="fas fa-brain"></i> AI & Analytics Settings</span></div>
+    <div class="card-body">
+      <div class="form-group">
+        <label class="form-label">Google Gemini API Key</label>
+        <input type="password" name="gemini_api_key" class="form-control" value="<?= h(s($settings,'gemini_api_key')) ?>" placeholder="AIzaSy...">
+        <span style="font-size:11px;color:var(--gray-4);display:block;margin-top:6px">
+          Required for cloud-powered strategy insights. Get a free API key at <a href="https://aistudio.google.com/" target="_blank" style="color:var(--gold);text-decoration:underline">Google AI Studio</a>.
+        </span>
       </div>
     </div>
   </div>

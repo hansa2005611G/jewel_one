@@ -60,7 +60,12 @@ include 'includes/header.php';
     <h1>Dashboard <span>Overview</span></h1>
     <div class="page-breadcrumb">Welcome back, <?= h($user['full_name']) ?> · <?= date('l, F j Y') ?></div>
   </div>
-  <a href="billing.php" class="btn btn-gold"><i class="fas fa-plus"></i> New Bill</a>
+  <div style="display:flex;gap:10px">
+    <?php if ($user['role'] === 'admin'): ?>
+    <a href="ai_predictions.php" class="btn btn-outline"><i class="fas fa-magic"></i> AI Predictions</a>
+    <?php endif; ?>
+    <a href="billing.php" class="btn btn-gold"><i class="fas fa-plus"></i> New Bill</a>
+  </div>
 </div>
 
 <!-- Stats Grid -->
